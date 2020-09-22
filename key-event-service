@@ -1,0 +1,74 @@
+#!/bin/rakudo
+
+# vim: ft=perl6
+
+use File::HomeDir;
+
+my $home = File::HomeDir.my-home.IO;
+my $local = $home.add('.local');
+my $data_dir = $local.add('key-event-service');
+
+$data_dir.mkdir();
+
+my $pid_file = $data_dir.add('PID');
+my $pipe_file = $data_dir.add('PIPE');
+
+my $proc_dir = '/proc'.IO;
+
+my $pid_handle = IO::Handle.new(:path($pid_file)).open(:rw);
+
+my $old_pid_text = slurp($pid_file);
+
+unless ($old_pid_text ~~ '') {
+    my $old_pid;
+    try {
+        $old_pid = Int($old_pid_text);
+    }
+    
+    if ($!) {
+        say "Removing corrupt PID file containing $old_pid_text.";
+    }
+    else {
+        my $old_proc_dir = $proc_dir.add($old_pid.fmt);
+
+        if ($old_proc_dir ~~ :e) {
+            die 'Already running. Exiting.';
+        }
+        else {
+            say "Removing stale PID file for $old_pid.";
+        }
+    }
+}
+
+$pid_handle.open(:w);
+
+say 'Making pipe...';
+
+$pipe_file.unlink;
+run 'mkfifo', $pipe_file;
+$pipe_file.chmod: 0o600;
+
+say 'Starting process...';
+
+my $child_proc = Proc::Async.new: :w, 'key-event-server';
+my $child_proc_result = $child_proc.start;
+
+say "Getting PID...";
+
+my $child_pid = $child_proc.pid.result;
+
+say "Started process on PID $child_pid";
+
+$pid_handle.print: $child_pid;
+$pid_handle.close();
+
+say 'Spinning the pipe...';
+
+while (True) {
+    my $pipe_handle = $pipe_file.open(:r);
+    my $line = $pipe_handle.slurp;
+    say "Writing `$line`";
+    $child_proc.print: $line;
+    $pipe_handle.close;
+}
+
