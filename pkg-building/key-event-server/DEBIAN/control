@@ -1,0 +1,9 @@
+Package: key-event-server
+Version: 1.0
+Section: custom
+Priority: optional
+Architecture: amd64
+Essential: no
+Installed-Size: 0
+Maintainer: "Owen Healy" <owen@owenehealy.com>
+Description: Server for key events

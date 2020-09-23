@@ -1,0 +1,25 @@
+#!/usr/bin/rakudo
+
+# vim: ft=perl6
+
+use FindBin;
+
+my $here = Bin();
+my $pkg_root = $here.add: "pkg-building/key-event-server";
+my $usr_bin = $pkg_root.add: "usr/bin";
+
+$usr_bin.mkdir;
+
+my @bin_files = [
+    $here.add("key-event-service"),
+    $here.add("bin/key-event-server"),
+    $here.add("ctrl-page-up"),
+    $here.add("ctrl-page-down"),
+];
+
+for @bin_files -> $bin_file {
+    my $dest_file = $usr_bin.add($bin_file.basename);
+    say "Copying $bin_file to $dest_file";
+    $bin_file.copy: $dest_file;
+}
+

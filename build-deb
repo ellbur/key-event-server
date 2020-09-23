@@ -1,0 +1,13 @@
+#!/usr/bin/rakudo
+
+# vim: ft=perl6
+
+use FindBin;
+
+my $here = Bin();
+my $pkg_building = $here.add: "pkg-building";
+
+chdir $pkg_building;
+
+run 'dpkg-deb', '--build', 'key-event-server';
+
